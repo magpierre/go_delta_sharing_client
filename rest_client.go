@@ -121,6 +121,49 @@ func (d *deltaSharingRestClient) RemoveFileFromCache(urlString string) error {
 	return d.cache.Remove(completePath)
 }
 
+func (d *deltaSharingRestClient) exportFileToCache(urlString string) (*string, error) {
+	pkg := "rest_client.go"
+	fn := "readFileReader"
+	u, err := url.Parse(urlString)
+	if err != nil {
+		return nil, err
+	}
+	var completePath = d.cacheDir + "/" + u.Host + u.Path
+	var p = strings.LastIndex(completePath, "/")
+	_, err = d.cache.Stat(completePath[:p])
+	if os.IsNotExist(err) {
+		d.cache.MkdirAll(completePath[:p], 0755)
+	}
+
+	cs, err := d.cache.Stat(completePath)
+	if os.IsNotExist(err) == false && cs.Size() == 0 {
+		d.cache.Remove(completePath)
+	} else if os.IsNotExist(err) == false && cs.Size() > 0 {
+		return &completePath, err
+
+	}
+
+	f, err := d.cache.Create(completePath)
+	defer f.Close()
+	if err != nil {
+		return nil, err
+	}
+	r, err := http.Get(urlString)
+	if err != nil {
+		return nil, err
+	}
+	defer r.Body.Close()
+	var b bytes.Buffer
+	_, err = io.Copy(&b, r.Body)
+	if err != nil {
+		return nil, &DSErr{pkg, fn, "io.Copy", err.Error()}
+	}
+
+	_, err = f.Write(b.Bytes())
+	defer f.Close()
+	return &completePath, err
+}
+
 func (d *deltaSharingRestClient) readFileReader(urlString string) (*bytes.Reader, error) {
 	pkg := "rest_client.go"
 	fn := "readFileReader"

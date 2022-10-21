@@ -26,6 +26,8 @@ import (
 	"strings"
 
 	dataframe "github.com/rocketlaunchr/dataframe-go"
+	"github.com/rocketlaunchr/dataframe-go/imports"
+	"github.com/xitongsys/parquet-go-source/local"
 
 	arrow "github.com/apache/arrow/go/v9/arrow"
 	"github.com/apache/arrow/go/v9/arrow/memory"
@@ -68,25 +70,22 @@ func LoadAsDataFrame(url string) (*dataframe.DataFrame, error) {
 	if err != nil || lf == nil {
 		return nil, err
 	}
-	//pf, err := local.NewLocalFileReader(lf.AddFiles[0].Url)
-	pf, err := s.restClient.readFileReader(lf.AddFiles[0].Url)
+	//
+	path, err := s.restClient.exportFileToCache(lf.AddFiles[0].Url)
 	if err != nil {
 		return nil, err
 	}
-	//pf, err := http.NewHttpReader(lf.AddFiles[0].Url, false, false, map[string]string{})
+	pf, err := local.NewLocalFileReader(*path)
 	if err != nil {
 		return nil, &DSErr{pkg, fn, "http.NewHttpReader", err.Error()}
 	}
-	pf.Len()
-	//ctx := context.Background()
 
-	/*	df, err := imports.LoadFromParquet(ctx, pf)
-		if err != nil {
-			return nil, &DSErr{pkg, fn, "imports.LoadFromParquet", err.Error()}
-		}
-		return df, err
-	*/
-	return nil, err
+	ctx := context.Background()
+	df, err := imports.LoadFromParquet(ctx, pf)
+	if err != nil {
+		return nil, &DSErr{pkg, fn, "imports.LoadFromParquet", err.Error()}
+	}
+	return df, err
 }
 
 func LoadAsArrowTable(url string, fileno int) (arrow.Table, error) {
