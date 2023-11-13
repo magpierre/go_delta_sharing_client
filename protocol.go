@@ -22,7 +22,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"strings"
 )
@@ -39,7 +39,7 @@ func (e *DSErr) Error() string {
 }
 
 /*
-	DeltaSharingProfile Object
+DeltaSharingProfile Object
 */
 type deltaSharingProfile struct {
 	ShareCredentialsVersion int    `json:"shareCredentialsVersion"`
@@ -65,7 +65,7 @@ func (p *deltaSharingProfile) ReadFromFile(path string) error {
 	if err != nil {
 		return err
 	}
-	msg, err := ioutil.ReadAll(f)
+	msg, err := io.ReadAll(f)
 	if err != nil {
 		return err
 	}
@@ -73,7 +73,7 @@ func (p *deltaSharingProfile) ReadFromFile(path string) error {
 }
 
 /*
-	Protocol Object
+Protocol Object
 */
 type protocol struct {
 	Protocol struct {
@@ -82,7 +82,7 @@ type protocol struct {
 }
 
 /*
-	Format Object
+Format Object
 */
 type format struct {
 	Type   string   `json:"type"`
@@ -90,7 +90,7 @@ type format struct {
 }
 
 /*
-	Metadata Object
+Metadata Object
 */
 type sparkField struct {
 	Name     string
@@ -131,7 +131,7 @@ func (M *metadata) GetSparkSchema() (*sparkSchema, error) {
 }
 
 /*
-	File Object
+File Object
 */
 type protoFile struct {
 	File File
