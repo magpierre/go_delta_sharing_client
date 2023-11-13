@@ -29,10 +29,10 @@ import (
 	"github.com/rocketlaunchr/dataframe-go/imports"
 	"github.com/xitongsys/parquet-go-source/local"
 
-	arrow "github.com/apache/arrow/go/v9/arrow"
-	"github.com/apache/arrow/go/v9/arrow/memory"
-	"github.com/apache/arrow/go/v9/parquet"
-	"github.com/apache/arrow/go/v9/parquet/pqarrow"
+	arrow "github.com/apache/arrow/go/v14/arrow"
+	"github.com/apache/arrow/go/v14/arrow/memory"
+	"github.com/apache/arrow/go/v14/parquet"
+	"github.com/apache/arrow/go/v14/parquet/pqarrow"
 )
 
 func _ParseURL(url string) (string, string, string, string) {
