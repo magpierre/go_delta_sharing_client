@@ -58,6 +58,16 @@ func newDeltaSharingProfile(filename string) (*deltaSharingProfile, error) {
 	}
 	return &d, err
 }
+func newDeltaSharingProfileFromString(profileString string) (*deltaSharingProfile, error) {
+	pkg := "protocol.go"
+	fn := "NewDeltaSharingProfile"
+	d := deltaSharingProfile{}
+	err := d.ReadFromString(profileString)
+	if err != nil {
+		return nil, &DSErr{pkg, fn, "d.ReadFromString", err.Error()}
+	}
+	return &d, err
+}
 
 func (p *deltaSharingProfile) ReadFromFile(path string) error {
 	f, err := os.Open(path)
@@ -70,6 +80,10 @@ func (p *deltaSharingProfile) ReadFromFile(path string) error {
 		return err
 	}
 	return json.Unmarshal(msg, p)
+}
+
+func (p *deltaSharingProfile) ReadFromString(profileString string) error {
+	return json.Unmarshal([]byte(profileString), p)
 }
 
 /*
@@ -109,12 +123,15 @@ type protoFormat struct {
 }
 type metadata struct {
 	Id               string            `json:"id"`
-	Name             string            `json:"name"`
-	Description      string            `json:"description"`
+	Name             string            `json:"name,omitempty"`
+	Description      string            `json:"description,omitempty"`
 	Format           protoFormat       `json:"format"`
 	SchemaString     string            `json:"schemaString"`
 	PartitionColumns []string          `json:"partitionColumns"`
-	Configuration    map[string]string `json:"configuration"`
+	Configuration    map[string]string `json:"configuration,omitempty"`
+	Version          int32             `json:"version,omitempty"`
+	Size             int32             `json:"size,omitempty"`
+	NumFiles         int32             `json:"numFiles,omitempty"`
 }
 
 type protoMetadata struct {
@@ -137,20 +154,33 @@ type protoFile struct {
 	File File
 }
 
-type protoCdcFile struct {
-	File   *File `json:"file,omitempty"`
-	Cdc    *File `json:"cdc,omitempty"`
-	Remove *File `json:"remove,omitempty"`
+type protoCdfFile struct {
+	File   *File       `json:"file,omitempty"`
+	Cdf    *CDFFile    `json:"cdc,omitempty"`
+	Remove *RemoveFile `json:"remove,omitempty"`
 }
 
 type File struct {
-	Url             string            `json:"url"`
-	Id              string            `json:"id"`
-	PartitionValues map[string]string `json:"partitionValues"`
-	Size            float32           `json:"size"`
-	Stats           string            `json:"stats,omitempty"`
-	Timestamp       float32           `json:"timestamp,omitempty"`
-	Version         int32             `json:"version,omitempty"`
+	Url                 string            `json:"url"`
+	Id                  string            `json:"id"`
+	PartitionValues     map[string]string `json:"partitionValues"`
+	Size                float32           `json:"size"`
+	Stats               string            `json:"stats,omitempty"`
+	Timestamp           float32           `json:"timestamp,omitempty"`
+	Version             int32             `json:"version,omitempty"`
+	ExpirationTimestamp int32             `json:"expirationTimestamp,omitempty"`
+}
+
+type CDFFile struct {
+	File
+}
+
+type RemoveFile struct {
+	File
+}
+
+type DataChangeFile struct {
+	File
 }
 
 func (F *File) GetStats() (*stats, error) {

@@ -172,6 +172,20 @@ func NewSharingClient(Ctx context.Context, ProfileFile string, cacheDir string) 
 	return &sharingClient{restClient: r}, err
 }
 
+func NewSharingClientFromString(Ctx context.Context, ProfileString string, cacheDir string) (*sharingClient, error) {
+	pkg := "delta_sharing.go"
+	fn := "NewSharingClientWithString"
+	p, err := newDeltaSharingProfileFromString(ProfileString)
+	if err != nil {
+		return nil, &DSErr{pkg, fn, "NewDeltaSharingProfileFromString", err.Error()}
+	}
+	r := newDeltaSharingRestClient(Ctx, p, cacheDir, 5)
+	if r == nil {
+		return nil, &DSErr{pkg, fn, "NewDeltaSharingRestClient", "Could not create DeltaSharingRestClient"}
+	}
+	return &sharingClient{restClient: r}, err
+}
+
 func (s *sharingClient) ListShares() ([]share, error) {
 	pkg := "delta_sharing.go"
 	fn := "ListShares"
@@ -244,6 +258,6 @@ func (s *sharingClient) RemoveFileFromCache(url string) error {
 	return s.restClient.RemoveFileFromCache(url)
 }
 
-func (s *sharingClient) ListTableChanges(t Table, options CdfOptions) (*listCdcFilesResponse, error) {
+func (s *sharingClient) ListTableChanges(t Table, options CdfOptions) (*listCdfFilesResponse, error) {
 	return s.restClient.ListTableChanges(t, options)
 }

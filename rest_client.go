@@ -63,13 +63,13 @@ type listFilesInTableResponse struct {
 	AddFiles []File
 }
 
-type listCdcFilesResponse struct {
+type listCdfFilesResponse struct {
 	Protocol protocol
 	Metadata metadata
 	Action   struct {
 		Add    []File
-		Cdf    []File
-		Remove []File
+		Cdf    []CDFFile
+		Remove []RemoveFile
 	}
 }
 
@@ -86,23 +86,21 @@ func newDeltaSharingRestClient(ctx context.Context, profile *deltaSharingProfile
 
 	// create dir
 	// with the right settings
-
-	base := afero.NewOsFs()
 	layer := afero.NewMemMapFs()
-	ufs := afero.NewCacheOnReadFs(base, layer, 100*time.Second)
 	var cache = cacheDir
-	if len(cacheDir) == 0 {
+	if len(cacheDir) > 0 {
+		base := afero.NewOsFs()
+		ufs := afero.NewCacheOnReadFs(base, layer, 100*time.Second)
 		ufs.Mkdir("cache", 0755)
 		cache = "cache"
-	} else {
-		ufs.Mkdir(cacheDir, 0755)
+		layer = ufs
 	}
 
 	return &deltaSharingRestClient{
 		profile:    profile,
 		numRetries: numRetries,
 		cacheDir:   cache,
-		cache:      ufs,
+		cache:      layer,
 		ctx:        ctx}
 
 }
@@ -566,7 +564,7 @@ func (c *deltaSharingRestClient) shouldRetry(r *http.Response) bool {
 	}
 }
 
-func (c *deltaSharingRestClient) ListTableChanges(table Table, options CdfOptions) (*listCdcFilesResponse, error) {
+func (c *deltaSharingRestClient) ListTableChanges(table Table, options CdfOptions) (*listCdfFilesResponse, error) {
 	pkg := "rest_client.go"
 	fn := "ListTableChanges"
 	url := "/shares/" + table.Share + "/schemas/" + strings.Trim(table.Schema, " ") + "/tables/" + table.Name + "/changes?"
@@ -593,7 +591,7 @@ func (c *deltaSharingRestClient) ListTableChanges(table Table, options CdfOption
 	}
 	var p protocol
 	var m protoMetadata
-	var f protoCdcFile
+	var f protoCdfFile
 
 	err = json.Unmarshal((*rd)[0], &p)
 	if err != nil {
@@ -603,7 +601,7 @@ func (c *deltaSharingRestClient) ListTableChanges(table Table, options CdfOption
 	if err != nil {
 		return nil, &DSErr{pkg, fn, "json.Unmarshal", err.Error()}
 	}
-	l := listCdcFilesResponse{Protocol: p, Metadata: m.Metadata}
+	l := listCdfFilesResponse{Protocol: p, Metadata: m.Metadata}
 	for _, v := range (*rd)[2:] {
 		if len(v) == 0 {
 			continue
@@ -615,8 +613,8 @@ func (c *deltaSharingRestClient) ListTableChanges(table Table, options CdfOption
 		if f.File != nil {
 			l.Action.Add = append(l.Action.Add, *f.File)
 		}
-		if f.Cdc != nil {
-			l.Action.Cdf = append(l.Action.Cdf, *f.Cdc)
+		if f.Cdf != nil {
+			l.Action.Cdf = append(l.Action.Cdf, *f.Cdf)
 		}
 		if f.Remove != nil {
 			l.Action.Remove = append(l.Action.Remove, *f.Remove)
