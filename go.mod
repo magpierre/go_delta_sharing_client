@@ -6,9 +6,7 @@ toolchain go1.23.2
 
 require (
 	github.com/apache/arrow-go/v18 v18.0.0
-	github.com/rocketlaunchr/dataframe-go v0.0.0-20211025052708-a1030444159b
 	github.com/spf13/afero v1.9.2
-	github.com/xitongsys/parquet-go-source v0.0.0-20220723234337-052319f3f36b
 )
 
 require (
@@ -31,28 +29,12 @@ require (
 )
 
 require (
-	cloud.google.com/go v0.110.8 // indirect
-	github.com/apache/arrow/go/arrow v0.0.0-20211112161151-bc219186db40 // indirect
 	github.com/apache/thrift v0.21.0 // indirect
 	github.com/goccy/go-json v0.10.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/google/go-cmp v0.6.0 // indirect
-	github.com/guptarohit/asciigraph v0.7.3 // indirect
-	github.com/juju/clock v1.1.1 // indirect
-	github.com/juju/errors v1.0.0 // indirect
-	github.com/juju/loggo v1.0.0 // indirect
-	github.com/juju/utils/v2 v2.0.0-20210305225158-eedbe7b6b3e2 // indirect
 	github.com/klauspost/compress v1.17.11 // indirect
-	github.com/mattn/go-runewidth v0.0.16 // indirect
-	github.com/olekukonko/tablewriter v0.0.5 // indirect
-	github.com/rivo/uniseg v0.4.7 // indirect
-	github.com/rocketlaunchr/mysql-go v1.1.3 // indirect
-	github.com/sirupsen/logrus v1.8.1 // indirect
-	github.com/xitongsys/parquet-go v1.6.2 // indirect
-	golang.org/x/crypto v0.29.0 // indirect
 	golang.org/x/exp v0.0.0-20241009180824-f66d83c29e7c // indirect
 	golang.org/x/net v0.31.0 // indirect
 	golang.org/x/sync v0.9.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241104194629-dd2ea8efbc28 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

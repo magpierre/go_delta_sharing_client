@@ -25,11 +25,9 @@ import (
 	"fmt"
 	"strings"
 
-	dataframe "github.com/rocketlaunchr/dataframe-go"
-	"github.com/rocketlaunchr/dataframe-go/imports"
-	"github.com/xitongsys/parquet-go-source/local"
+	//dataframe "github.com/rocketlaunchr/dataframe-go"
 
-	arrow "github.com/apache/arrow-go/v18/arrow"
+	"github.com/apache/arrow-go/v18/arrow"
 	"github.com/apache/arrow-go/v18/arrow/memory"
 	"github.com/apache/arrow-go/v18/parquet"
 	"github.com/apache/arrow-go/v18/parquet/pqarrow"
@@ -57,6 +55,7 @@ func _ParseURL(url string) (string, string, string, string) {
 	return profile, share, schema, table
 }
 
+/*
 func LoadAsDataFrame(url string) (*dataframe.DataFrame, error) {
 	pkg := "delta_sharing.go"
 	fn := "LoadAsDataFrame"
@@ -87,6 +86,7 @@ func LoadAsDataFrame(url string) (*dataframe.DataFrame, error) {
 	}
 	return df, err
 }
+*/
 
 func LoadAsArrowTable(url string, fileno int) (arrow.Table, error) {
 	pkg := "delta_sharing.go"
