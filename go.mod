@@ -5,7 +5,7 @@ go 1.22.7
 toolchain go1.23.2
 
 require (
-	github.com/apache/arrow/go/v18 v18.0.0-20241007013041-ab95a4d25142
+	github.com/apache/arrow-go/v18 v18.0.0
 	github.com/rocketlaunchr/dataframe-go v0.0.0-20211025052708-a1030444159b
 	github.com/spf13/afero v1.9.2
 	github.com/xitongsys/parquet-go-source v0.0.0-20220723234337-052319f3f36b
