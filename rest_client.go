@@ -31,6 +31,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/apache/arrow-go/v18/arrow"
+	"github.com/apache/arrow-go/v18/arrow/memory"
+	"github.com/apache/arrow-go/v18/parquet"
+	"github.com/apache/arrow-go/v18/parquet/pqarrow"
 	afero "github.com/spf13/afero"
 )
 
@@ -621,4 +625,18 @@ func (c *deltaSharingRestClient) ListTableChanges(table Table, options CdfOption
 		}
 	}
 	return &l, err
+}
+
+func (c *deltaSharingRestClient) ReadFileUrlToArrowTable(url string) (arrow.Table, error) {
+	pf, err := c.readFileReader(url)
+	if err != nil {
+		return nil, err
+	}
+	mem := memory.NewGoAllocator()
+	pa, err := pqarrow.ReadTable(context.Background(), pf, parquet.NewReaderProperties(nil), pqarrow.ArrowReadProperties{}, mem)
+	if err != nil {
+		return nil, err
+	}
+
+	return pa, nil
 }

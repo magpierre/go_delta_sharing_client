@@ -28,12 +28,9 @@ import (
 	//dataframe "github.com/rocketlaunchr/dataframe-go"
 
 	"github.com/apache/arrow-go/v18/arrow"
-	"github.com/apache/arrow-go/v18/arrow/memory"
-	"github.com/apache/arrow-go/v18/parquet"
-	"github.com/apache/arrow-go/v18/parquet/pqarrow"
 )
 
-func _ParseURL(url string) (string, string, string, string) {
+func parseURL(url string) (string, string, string, string) {
 	i := strings.LastIndex(url, "#")
 	if i < 0 {
 		fmt.Println("Invalid URL:", url)
@@ -55,77 +52,39 @@ func _ParseURL(url string) (string, string, string, string) {
 	return profile, share, schema, table
 }
 
-/*
-func LoadAsDataFrame(url string) (*dataframe.DataFrame, error) {
-	pkg := "delta_sharing.go"
-	fn := "LoadAsDataFrame"
-	profile, shareStr, schemaStr, tableStr := _ParseURL(url)
-	s, err := NewSharingClient(context.Background(), profile, "")
-	if err != nil {
-		return nil, err
-	}
-	t := Table{Share: shareStr, Schema: schemaStr, Name: tableStr}
-	lf, err := s.restClient.ListFilesInTable(t)
-	if err != nil || lf == nil {
-		return nil, err
-	}
-	//
-	path, err := s.restClient.exportFileToCache(lf.AddFiles[0].Url)
-	if err != nil {
-		return nil, err
-	}
-	pf, err := local.NewLocalFileReader(*path)
-	if err != nil {
-		return nil, &DSErr{pkg, fn, "http.NewHttpReader", err.Error()}
-	}
-
-	ctx := context.Background()
-	df, err := imports.LoadFromParquet(ctx, pf)
-	if err != nil {
-		return nil, &DSErr{pkg, fn, "imports.LoadFromParquet", err.Error()}
-	}
-	return df, err
-}
-*/
-
 func LoadAsArrowTable(url string, fileno int) (arrow.Table, error) {
 	pkg := "delta_sharing.go"
 	fn := "LoadAsArrowTable"
-	profile, shareStr, schemaStr, tableStr := _ParseURL(url)
+	profile, shareStr, schemaStr, tableStr := parseURL(url)
 	s, err := NewSharingClient(context.Background(), profile, "")
 	if err != nil {
 		return nil, err
 	}
 	t := Table{Share: shareStr, Schema: schemaStr, Name: tableStr}
-	lf, err := s.restClient.ListFilesInTable(t)
+	lf, err := s.ListFilesInTable(t)
 	if err != nil {
 		return nil, err
 	}
 
 	if fileno > len(lf.AddFiles) || fileno < 0 {
-		return nil, errors.New("Invalid index")
+		return nil, errors.New("invalid index")
 	}
-	pf, err := s.restClient.readFileReader(lf.AddFiles[fileno].Url)
-	if err != nil {
-		return nil, err
-	}
-	mem := memory.NewGoAllocator()
-	pa, err := pqarrow.ReadTable(context.Background(), pf, parquet.NewReaderProperties(nil), pqarrow.ArrowReadProperties{}, mem)
+	pf, err := s.ReadFileUrlToArrowTable(lf.AddFiles[fileno].Url)
 	if err != nil {
 		return nil, &DSErr{pkg, fn, "pqarrow.ReadTable", err.Error()}
 	}
 
-	return pa, err
+	return pf, err
 }
 
-func LoadArrowTable(client interface{}, table Table, fileId string) (arrow.Table, error) {
+func LoadArrowTable(client SharingClient, table Table, fileId string) (arrow.Table, error) {
 	pkg := "delta_sharing.go"
 	fn := "LoadArrowTable"
 	if client == nil {
 		return nil, &DSErr{pkg, fn, "client == nil", "Invalid client"}
 	}
 
-	f, err := client.(*sharingClient).restClient.ListFilesInTable(table)
+	f, err := client.ListFilesInTable(table)
 	if err != nil {
 		return nil, err
 	}
@@ -142,23 +101,30 @@ func LoadArrowTable(client interface{}, table Table, fileId string) (arrow.Table
 		return nil, &DSErr{pkg, fn, "v.Id == fileId", "fileid not found in table"}
 	}
 
-	pf, err := client.(*sharingClient).restClient.readFileReader(*urlValue)
-	if err != nil {
-		return nil, err
-	}
-	mem := memory.NewGoAllocator()
-	pa, err := pqarrow.ReadTable(context.Background(), pf, parquet.NewReaderProperties(nil), pqarrow.ArrowReadProperties{}, mem)
+	pf, err := client.ReadFileUrlToArrowTable(*urlValue)
 	if err != nil {
 		return nil, &DSErr{pkg, fn, "pqarrow.ReadTable", err.Error()}
 	}
-	return pa, err
+	return pf, err
 }
 
+type SharingClient interface {
+	ListShares() ([]share, error)
+	ListSchemas(share share) ([]schema, error)
+	ListTables(schema schema) ([]Table, error)
+	ListAllTables() ([]Table, error)
+	ListFilesInTable(t Table) (*listFilesInTableResponse, error)
+	GetTableVersion(t Table) (int, error)
+	GetTableMetadata(t Table) (*metadata, error)
+	RemoveFileFromCache(url string) error
+	ListTableChanges(t Table, options CdfOptions) (*listCdfFilesResponse, error)
+	ReadFileUrlToArrowTable(url string) (arrow.Table, error)
+}
 type sharingClient struct {
 	restClient *deltaSharingRestClient
 }
 
-func NewSharingClient(Ctx context.Context, ProfileFile string, cacheDir string) (*sharingClient, error) {
+func NewSharingClient(Ctx context.Context, ProfileFile string, cacheDir string) (SharingClient, error) {
 	pkg := "delta_sharing.go"
 	fn := "NewSharingClient"
 	p, err := newDeltaSharingProfile(ProfileFile)
@@ -172,7 +138,7 @@ func NewSharingClient(Ctx context.Context, ProfileFile string, cacheDir string) 
 	return &sharingClient{restClient: r}, err
 }
 
-func NewSharingClientFromString(Ctx context.Context, ProfileString string, cacheDir string) (*sharingClient, error) {
+func NewSharingClientFromString(Ctx context.Context, ProfileString string, cacheDir string) (SharingClient, error) {
 	pkg := "delta_sharing.go"
 	fn := "NewSharingClientWithString"
 	p, err := newDeltaSharingProfileFromString(ProfileString)
@@ -260,4 +226,8 @@ func (s *sharingClient) RemoveFileFromCache(url string) error {
 
 func (s *sharingClient) ListTableChanges(t Table, options CdfOptions) (*listCdfFilesResponse, error) {
 	return s.restClient.ListTableChanges(t, options)
+}
+
+func (s *sharingClient) ReadFileUrlToArrowTable(url string) (arrow.Table, error) {
+	return s.restClient.ReadFileUrlToArrowTable(url)
 }

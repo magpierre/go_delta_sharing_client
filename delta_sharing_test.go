@@ -51,7 +51,7 @@ func Test_ParseURL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1, got2, got3 := _ParseURL(tt.args.url)
+			got, got1, got2, got3 := parseURL(tt.args.url)
 			if got != tt.want {
 				t.Errorf("_ParseURL() got = %v, want %v", got, tt.want)
 			}
