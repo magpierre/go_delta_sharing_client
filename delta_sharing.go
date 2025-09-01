@@ -25,8 +25,6 @@ import (
 	"fmt"
 	"strings"
 
-	//dataframe "github.com/rocketlaunchr/dataframe-go"
-
 	"github.com/apache/arrow-go/v18/arrow"
 )
 
@@ -56,7 +54,7 @@ func LoadAsArrowTable(url string, fileno int) (arrow.Table, error) {
 	pkg := "delta_sharing.go"
 	fn := "LoadAsArrowTable"
 	profile, shareStr, schemaStr, tableStr := parseURL(url)
-	s, err := NewSharingClient(context.Background(), profile, "")
+	s, err := NewSharingClient(context.Background(), profile)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +114,6 @@ type SharingClient interface {
 	ListFilesInTable(t Table) (*listFilesInTableResponse, error)
 	GetTableVersion(t Table) (int, error)
 	GetTableMetadata(t Table) (*metadata, error)
-	RemoveFileFromCache(url string) error
 	ListTableChanges(t Table, options CdfOptions) (*listCdfFilesResponse, error)
 	ReadFileUrlToArrowTable(url string) (arrow.Table, error)
 }
@@ -124,14 +121,14 @@ type sharingClient struct {
 	restClient *deltaSharingRestClient
 }
 
-func NewSharingClient(Ctx context.Context, ProfileFile string, cacheDir string) (SharingClient, error) {
+func NewSharingClient(Ctx context.Context, ProfileFile string) (SharingClient, error) {
 	pkg := "delta_sharing.go"
 	fn := "NewSharingClient"
 	p, err := newDeltaSharingProfile(ProfileFile)
 	if err != nil {
 		return nil, &DSErr{pkg, fn, "NewDeltaSharingProfile", err.Error()}
 	}
-	r := newDeltaSharingRestClient(Ctx, p, cacheDir, 5)
+	r := newDeltaSharingRestClient(Ctx, p, 5)
 	if r == nil {
 		return nil, &DSErr{pkg, fn, "NewDeltaSharingRestClient", "Could not create DeltaSharingRestClient"}
 	}
@@ -145,7 +142,7 @@ func NewSharingClientFromString(Ctx context.Context, ProfileString string, cache
 	if err != nil {
 		return nil, &DSErr{pkg, fn, "NewDeltaSharingProfileFromString", err.Error()}
 	}
-	r := newDeltaSharingRestClient(Ctx, p, cacheDir, 5)
+	r := newDeltaSharingRestClient(Ctx, p, 5)
 	if r == nil {
 		return nil, &DSErr{pkg, fn, "NewDeltaSharingRestClient", "Could not create DeltaSharingRestClient"}
 	}
@@ -212,16 +209,6 @@ func (s *sharingClient) GetTableMetadata(t Table) (*metadata, error) {
 		return nil, err
 	}
 	return &m.Metadata, nil
-}
-
-func (s *sharingClient) RemoveFileFromCache(url string) error {
-	pkg := "delta_sharing.go"
-	fn := "NewSharingClient"
-
-	if s == nil || s.restClient == nil {
-		return &DSErr{pkg, fn, "RemoveFileFromCache", "cache not initialized"}
-	}
-	return s.restClient.RemoveFileFromCache(url)
 }
 
 func (s *sharingClient) ListTableChanges(t Table, options CdfOptions) (*listCdfFilesResponse, error) {

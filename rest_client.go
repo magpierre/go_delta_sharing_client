@@ -26,16 +26,13 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/apache/arrow-go/v18/arrow"
 	"github.com/apache/arrow-go/v18/arrow/memory"
 	"github.com/apache/arrow-go/v18/parquet"
 	"github.com/apache/arrow-go/v18/parquet/pqarrow"
-	afero "github.com/spf13/afero"
 )
 
 /* Response types */
@@ -80,127 +77,26 @@ type listCdfFilesResponse struct {
 type deltaSharingRestClient struct {
 	profile    *deltaSharingProfile
 	numRetries int
-	cacheDir   string
-	cache      afero.Fs
-	ctx        context.Context
+	//	cacheDir   string
+	//	cache      afero.Fs
+	ctx context.Context
 }
 
 /* Constructor for the DeltaSharingRestClient */
-func newDeltaSharingRestClient(ctx context.Context, profile *deltaSharingProfile, cacheDir string, numRetries int) *deltaSharingRestClient {
-
-	// create dir
-	// with the right settings
-	layer := afero.NewMemMapFs()
-	var cache = cacheDir
-	if len(cacheDir) > 0 {
-		base := afero.NewOsFs()
-		ufs := afero.NewCacheOnReadFs(base, layer, 100*time.Second)
-		ufs.Mkdir("cache", 0755)
-		cache = "cache"
-		layer = ufs
-	}
+func newDeltaSharingRestClient(ctx context.Context, profile *deltaSharingProfile, numRetries int) *deltaSharingRestClient {
 
 	return &deltaSharingRestClient{
 		profile:    profile,
 		numRetries: numRetries,
-		cacheDir:   cache,
-		cache:      layer,
-		ctx:        ctx}
+		//		cache:      nil,
+		ctx: ctx}
 
-}
-
-func (d *deltaSharingRestClient) RemoveFileFromCache(urlString string) error {
-	u, err := url.Parse(urlString)
-	if err != nil {
-		return err
-	}
-	var completePath = d.cacheDir + "/" + u.Host + u.Path
-
-	_, err = d.cache.Stat(completePath)
-	if os.IsNotExist(err) {
-		return nil
-	}
-	return d.cache.Remove(completePath)
-}
-
-func (d *deltaSharingRestClient) exportFileToCache(urlString string) (*string, error) {
-	pkg := "rest_client.go"
-	fn := "readFileReader"
-	u, err := url.Parse(urlString)
-	if err != nil {
-		return nil, err
-	}
-	var completePath = d.cacheDir + "/" + u.Host + u.Path
-	var p = strings.LastIndex(completePath, "/")
-	_, err = d.cache.Stat(completePath[:p])
-	if os.IsNotExist(err) {
-		d.cache.MkdirAll(completePath[:p], 0755)
-	}
-
-	cs, err := d.cache.Stat(completePath)
-	if os.IsNotExist(err) == false && cs.Size() == 0 {
-		d.cache.Remove(completePath)
-	} else if os.IsNotExist(err) == false && cs.Size() > 0 {
-		return &completePath, err
-
-	}
-
-	f, err := d.cache.Create(completePath)
-	defer f.Close()
-	if err != nil {
-		return nil, err
-	}
-	r, err := http.Get(urlString)
-	if err != nil {
-		return nil, err
-	}
-	defer r.Body.Close()
-	var b bytes.Buffer
-	_, err = io.Copy(&b, r.Body)
-	if err != nil {
-		return nil, &DSErr{pkg, fn, "io.Copy", err.Error()}
-	}
-
-	_, err = f.Write(b.Bytes())
-	defer f.Close()
-	return &completePath, err
 }
 
 func (d *deltaSharingRestClient) readFileReader(urlString string) (*bytes.Reader, error) {
 	pkg := "rest_client.go"
 	fn := "readFileReader"
-	u, err := url.Parse(urlString)
-	if err != nil {
-		return nil, err
-	}
-	var completePath = d.cacheDir + "/" + u.Host + u.Path
-	var p = strings.LastIndex(completePath, "/")
-	_, err = d.cache.Stat(completePath[:p])
-	if os.IsNotExist(err) {
-		d.cache.MkdirAll(completePath[:p], 0755)
-	}
 
-	cs, err := d.cache.Stat(completePath)
-	if os.IsNotExist(err) == false && cs.Size() == 0 {
-		d.cache.Remove(completePath)
-	} else if os.IsNotExist(err) == false && cs.Size() > 0 {
-		f, err := d.cache.Open(completePath)
-		if err != nil {
-			return nil, err
-		}
-		var b bytes.Buffer
-		_, err = io.Copy(&b, f)
-		defer f.Close()
-
-		br := bytes.NewReader(b.Bytes())
-		return br, err
-	}
-
-	f, err := d.cache.Create(completePath)
-	defer f.Close()
-	if err != nil {
-		return nil, err
-	}
 	r, err := http.Get(urlString)
 	if err != nil {
 		return nil, err
@@ -212,8 +108,6 @@ func (d *deltaSharingRestClient) readFileReader(urlString string) (*bytes.Reader
 		return nil, &DSErr{pkg, fn, "io.Copy", err.Error()}
 	}
 	br := bytes.NewReader(b.Bytes())
-	_, err = f.Write(b.Bytes())
-	defer f.Close()
 	return br, err
 }
 
@@ -271,7 +165,7 @@ func (d *deltaSharingRestClient) callSharingServerWithParameters(request string,
 	for {
 		response, err = http.DefaultClient.Do(req)
 		if err != nil {
-			if retryCnt <= d.numRetries && d.shouldRetry(response) == true {
+			if retryCnt <= d.numRetries && d.shouldRetry(response) {
 				retryCnt++
 				continue
 			}
@@ -317,7 +211,7 @@ func (d *deltaSharingRestClient) getResponseHeader(request string) (map[string][
 	for {
 		response, err = http.DefaultClient.Do(req)
 		if err != nil {
-			if retryCnt <= d.numRetries && d.shouldRetry(response) == true {
+			if retryCnt <= d.numRetries && d.shouldRetry(response) {
 				retryCnt++
 				continue
 			}
@@ -527,7 +421,7 @@ func (c *deltaSharingRestClient) postQuery(request string, predicateHints []stri
 	for {
 		response, err = http.DefaultClient.Do(req)
 		if err != nil {
-			if retryCnt <= c.numRetries && c.shouldRetry(response) == true {
+			if retryCnt <= c.numRetries && c.shouldRetry(response) {
 				retryCnt++
 				continue
 			}
@@ -545,9 +439,7 @@ func (c *deltaSharingRestClient) postQuery(request string, predicateHints []stri
 		return nil, &DSErr{pkg, fn, "io.Copy", err.Error()}
 	}
 	x := bytes.Split(b.Bytes(), []byte{'\n'})
-	for _, v := range x {
-		responses = append(responses, v)
-	}
+	responses = append(responses, x...)
 	return &responses, err
 }
 
