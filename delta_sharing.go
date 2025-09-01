@@ -135,7 +135,7 @@ func NewSharingClient(Ctx context.Context, ProfileFile string) (SharingClient, e
 	return &sharingClient{restClient: r}, err
 }
 
-func NewSharingClientFromString(Ctx context.Context, ProfileString string, cacheDir string) (SharingClient, error) {
+func NewSharingClientFromString(Ctx context.Context, ProfileString string) (SharingClient, error) {
 	pkg := "delta_sharing.go"
 	fn := "NewSharingClientWithString"
 	p, err := newDeltaSharingProfileFromString(ProfileString)
