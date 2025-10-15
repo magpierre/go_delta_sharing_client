@@ -50,16 +50,16 @@ func parseURL(url string) (string, string, string, string) {
 	return profile, share, schema, table
 }
 
-func LoadAsArrowTable(url string, fileno int) (arrow.Table, error) {
+func LoadAsArrowTable(ctx context.Context, url string, fileno int) (arrow.Table, error) {
 	pkg := "delta_sharing.go"
 	fn := "LoadAsArrowTable"
 	profile, shareStr, schemaStr, tableStr := parseURL(url)
-	s, err := NewSharingClient(context.Background(), profile)
+	s, err := NewSharingClient(profile)
 	if err != nil {
 		return nil, err
 	}
 	t := Table{Share: shareStr, Schema: schemaStr, Name: tableStr}
-	lf, err := s.ListFilesInTable(t)
+	lf, err := s.ListFilesInTable(ctx, t)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +67,7 @@ func LoadAsArrowTable(url string, fileno int) (arrow.Table, error) {
 	if fileno > len(lf.AddFiles) || fileno < 0 {
 		return nil, errors.New("invalid index")
 	}
-	pf, err := s.ReadFileUrlToArrowTable(lf.AddFiles[fileno].Url)
+	pf, err := s.ReadFileUrlToArrowTable(ctx, lf.AddFiles[fileno].Url)
 	if err != nil {
 		return nil, &DSErr{pkg, fn, "pqarrow.ReadTable", err.Error()}
 	}
@@ -75,14 +75,14 @@ func LoadAsArrowTable(url string, fileno int) (arrow.Table, error) {
 	return pf, err
 }
 
-func LoadArrowTable(client SharingClient, table Table, fileId string) (arrow.Table, error) {
+func LoadArrowTable(ctx context.Context, client SharingClient, table Table, fileId string) (arrow.Table, error) {
 	pkg := "delta_sharing.go"
 	fn := "LoadArrowTable"
 	if client == nil {
 		return nil, &DSErr{pkg, fn, "client == nil", "Invalid client"}
 	}
 
-	f, err := client.ListFilesInTable(table)
+	f, err := client.ListFilesInTable(ctx, table)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +99,7 @@ func LoadArrowTable(client SharingClient, table Table, fileId string) (arrow.Tab
 		return nil, &DSErr{pkg, fn, "v.Id == fileId", "fileid not found in table"}
 	}
 
-	pf, err := client.ReadFileUrlToArrowTable(*urlValue)
+	pf, err := client.ReadFileUrlToArrowTable(ctx, *urlValue)
 	if err != nil {
 		return nil, &DSErr{pkg, fn, "pqarrow.ReadTable", err.Error()}
 	}
@@ -107,114 +107,122 @@ func LoadArrowTable(client SharingClient, table Table, fileId string) (arrow.Tab
 }
 
 type SharingClient interface {
-	ListShares() ([]share, error)
-	ListSchemas(share share) ([]schema, error)
-	ListTables(schema schema) ([]Table, error)
-	ListAllTables() ([]Table, error)
-	ListFilesInTable(t Table) (*listFilesInTableResponse, error)
-	GetTableVersion(t Table) (int, error)
-	GetTableMetadata(t Table) (*metadata, error)
-	ListTableChanges(t Table, options CdfOptions) (*listCdfFilesResponse, error)
-	ReadFileUrlToArrowTable(url string) (arrow.Table, error)
+	ListShares(ctx context.Context, maxResults int, pageToken string) ([]share, string, error)
+	ListSchemas(ctx context.Context, share share, maxResults int, pageToken string) ([]schema, string, error)
+	ListTables(ctx context.Context, schema schema, maxResults int, pageToken string) ([]Table, string, error)
+	ListAllTables(ctx context.Context, maxResults int, pageToken string) ([]Table, string, error)
+	ListFilesInTable(ctx context.Context, t Table) (*listFilesInTableResponse, error)
+	GetTableVersion(ctx context.Context, t Table) (int64, error)
+	GetTableMetadata(ctx context.Context, t Table) (*metadata, error)
+	ListTableChanges(ctx context.Context, t Table, options CdfOptions) (*listCdfFilesResponse, error)
+	ReadFileUrlToArrowTable(ctx context.Context, url string) (arrow.Table, error)
 }
 type sharingClient struct {
 	restClient *deltaSharingRestClient
 }
 
-func NewSharingClient(Ctx context.Context, ProfileFile string) (SharingClient, error) {
+func NewSharingClient(ProfileFile string) (SharingClient, error) {
 	pkg := "delta_sharing.go"
 	fn := "NewSharingClient"
 	p, err := newDeltaSharingProfile(ProfileFile)
 	if err != nil {
 		return nil, &DSErr{pkg, fn, "NewDeltaSharingProfile", err.Error()}
 	}
-	r := newDeltaSharingRestClient(Ctx, p, 5)
+	r := newDeltaSharingRestClient(p, 5)
 	if r == nil {
 		return nil, &DSErr{pkg, fn, "NewDeltaSharingRestClient", "Could not create DeltaSharingRestClient"}
 	}
 	return &sharingClient{restClient: r}, err
 }
 
-func NewSharingClientFromString(Ctx context.Context, ProfileString string) (SharingClient, error) {
+func NewSharingClientFromString(ProfileString string) (SharingClient, error) {
 	pkg := "delta_sharing.go"
 	fn := "NewSharingClientWithString"
 	p, err := newDeltaSharingProfileFromString(ProfileString)
 	if err != nil {
 		return nil, &DSErr{pkg, fn, "NewDeltaSharingProfileFromString", err.Error()}
 	}
-	r := newDeltaSharingRestClient(Ctx, p, 5)
+	r := newDeltaSharingRestClient(p, 5)
 	if r == nil {
 		return nil, &DSErr{pkg, fn, "NewDeltaSharingRestClient", "Could not create DeltaSharingRestClient"}
 	}
 	return &sharingClient{restClient: r}, err
 }
 
-func (s *sharingClient) ListShares() ([]share, error) {
+func (s *sharingClient) ListShares(ctx context.Context, maxResults int, pageToken string) ([]share, string, error) {
 	pkg := "delta_sharing.go"
 	fn := "ListShares"
-	sh, err := s.restClient.ListShares(0, "")
+	sh, err := s.restClient.ListShares(ctx, maxResults, pageToken)
 	if err != nil {
-		return nil, &DSErr{pkg, fn, "s.RestClient.ListShares", err.Error()}
+		return nil, "", &DSErr{pkg, fn, "s.RestClient.ListShares", err.Error()}
 	}
-	return sh.Shares, err
+	return sh.Shares, sh.NextPageToken, nil
 }
 
-func (s *sharingClient) ListSchemas(share share) ([]schema, error) {
-	sc, err := s.restClient.ListSchemas(share, 0, "")
+func (s *sharingClient) ListSchemas(ctx context.Context, share share, maxResults int, pageToken string) ([]schema, string, error) {
+	sc, err := s.restClient.ListSchemas(ctx, share, maxResults, pageToken)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	return sc.Schemas, err
+	return sc.Schemas, sc.NextPageToken, nil
 }
 
-func (s *sharingClient) ListTables(schema schema) ([]Table, error) {
-	t, err := s.restClient.ListTables(schema, 0, "")
+func (s *sharingClient) ListTables(ctx context.Context, schema schema, maxResults int, pageToken string) ([]Table, string, error) {
+	t, err := s.restClient.ListTables(ctx, schema, maxResults, pageToken)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	return t.Tables, err
+	return t.Tables, t.NextPageToken, nil
 }
 
-func (s *sharingClient) ListAllTables() ([]Table, error) {
-	sh, err := s.restClient.ListShares(0, "")
+func (s *sharingClient) ListAllTables(ctx context.Context, maxResults int, pageToken string) ([]Table, string, error) {
+	// Note: This fetches all tables across ALL shares
+	// Pagination is complex here - we need to iterate through shares
+	// For now, we'll collect all tables but won't support cross-share pagination
+	// A better design would be to paginate at the share level or require a share parameter
+	sh, err := s.restClient.ListShares(ctx, 0, "")
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	var tl []Table
+	var lastToken string
 	for _, v := range sh.Shares {
-		x, err := s.restClient.ListAllTables(v, 0, "")
+		x, err := s.restClient.ListAllTables(ctx, v, maxResults, pageToken)
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
 		tl = append(tl, x.Tables...)
+		if x.NextPageToken != "" {
+			lastToken = x.NextPageToken
+		}
 	}
-	return tl, err
+	return tl, lastToken, nil
 }
 
-func (s *sharingClient) ListFilesInTable(t Table) (*listFilesInTableResponse, error) {
-	return s.restClient.ListFilesInTable(t)
+func (s *sharingClient) ListFilesInTable(ctx context.Context, t Table) (*listFilesInTableResponse, error) {
+	return s.restClient.ListFilesInTable(ctx, t)
 }
 
-func (s *sharingClient) GetTableVersion(t Table) (int, error) {
-	v, err := s.restClient.QueryTableVersion(t)
+func (s *sharingClient) GetTableVersion(ctx context.Context, t Table) (int64, error) {
+	v, err := s.restClient.QueryTableVersion(ctx, t)
 	if err != nil {
 		return -1, err
 	}
 	return v.DeltaTableVersion, nil
 }
 
-func (s *sharingClient) GetTableMetadata(t Table) (*metadata, error) {
-	m, err := s.restClient.QueryTableMetadata(t)
+func (s *sharingClient) GetTableMetadata(ctx context.Context, t Table) (*metadata, error) {
+	m, err := s.restClient.QueryTableMetadata(ctx, t)
 	if err != nil {
 		return nil, err
 	}
 	return &m.Metadata, nil
 }
 
-func (s *sharingClient) ListTableChanges(t Table, options CdfOptions) (*listCdfFilesResponse, error) {
-	return s.restClient.ListTableChanges(t, options)
+func (s *sharingClient) ListTableChanges(ctx context.Context, t Table, options CdfOptions) (*listCdfFilesResponse, error) {
+	return s.restClient.ListTableChanges(ctx, t, options)
 }
 
-func (s *sharingClient) ReadFileUrlToArrowTable(url string) (arrow.Table, error) {
-	return s.restClient.ReadFileUrlToArrowTable(url)
+func (s *sharingClient) ReadFileUrlToArrowTable(ctx context.Context, url string) (arrow.Table, error) {
+	return s.restClient.ReadFileUrlToArrowTable(ctx, url)
 }

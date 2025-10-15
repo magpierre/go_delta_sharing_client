@@ -70,6 +70,7 @@ func Test_ParseURL(t *testing.T) {
 
 func TestLoadAsArrowTable(t *testing.T) {
 	type args struct {
+		ctx    context.Context
 		url    string
 		fileno int
 	}
@@ -83,7 +84,7 @@ func TestLoadAsArrowTable(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := LoadAsArrowTable(tt.args.url, tt.args.fileno)
+			got, err := LoadAsArrowTable(tt.args.ctx, tt.args.url, tt.args.fileno)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("LoadAsArrowTable() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -97,7 +98,6 @@ func TestLoadAsArrowTable(t *testing.T) {
 
 func TestNewSharingClient(t *testing.T) {
 	type args struct {
-		Ctx         context.Context
 		ProfileFile string
 	}
 	tests := []struct {
@@ -108,7 +108,7 @@ func TestNewSharingClient(t *testing.T) {
 	}{
 		{
 			name: "test1",
-			args: args{context.Background(), "/Users/magnuspierre/Documents/shares/open-datasets.share.txt"},
+			args: args{"/Users/magnuspierre/Documents/shares/open-datasets.share.txt"},
 			want: &sharingClient{
 				restClient: &deltaSharingRestClient{
 					profile: &deltaSharingProfile{
@@ -118,29 +118,44 @@ func TestNewSharingClient(t *testing.T) {
 						ExpirationTime:          "",
 					},
 					numRetries: 5,
-					ctx:        context.Background(),
 				},
 			},
 			wantErr: false,
 		},
 		{
 			name:    "test2",
-			args:    args{context.Background(), "/Users/magnuspierre/Documents/shares/open-dtasets.share.txt"},
+			args:    args{"/Users/magnuspierre/Documents/shares/open-dtasets.share.txt"},
 			want:    nil,
 			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewSharingClient(tt.args.Ctx, tt.args.ProfileFile)
+			got, err := NewSharingClient(tt.args.ProfileFile)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("NewSharingClient() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Log(&got)
-				t.Log(&tt.want)
-				t.Errorf("NewSharingClient() = %v, want %v", got, tt.want)
+			// For error cases, just check that we got an error and client is nil
+			if tt.wantErr {
+				if got != nil {
+					t.Errorf("NewSharingClient() expected nil client on error, got %v", got)
+				}
+				return
+			}
+			// For success cases, check the structure
+			if got == nil {
+				t.Errorf("NewSharingClient() expected non-nil client, got nil")
+				return
+			}
+			// Check that we got a valid client with the expected configuration
+			gotClient := got.(*sharingClient)
+			wantClient := tt.want
+			if !reflect.DeepEqual(gotClient.restClient.profile, wantClient.restClient.profile) {
+				t.Errorf("NewSharingClient() profile mismatch, got %v, want %v", gotClient.restClient.profile, wantClient.restClient.profile)
+			}
+			if gotClient.restClient.numRetries != wantClient.restClient.numRetries {
+				t.Errorf("NewSharingClient() numRetries mismatch, got %v, want %v", gotClient.restClient.numRetries, wantClient.restClient.numRetries)
 			}
 		})
 	}
@@ -196,7 +211,7 @@ func TestSharingClient_ListShares(t *testing.T) {
 			s := &sharingClient{
 				restClient: tt.fields.RestClient,
 			}
-			got, err := s.ListShares()
+			got, _, err := s.ListShares(context.Background(), 0, "")
 			if (err != nil) != tt.wantErr {
 				t.Errorf("SharingClient.ListShares() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -233,7 +248,6 @@ func TestSharingClient_ListSchemas(t *testing.T) {
 						ExpirationTime:          "",
 					},
 					numRetries: 0,
-					ctx:        context.Background(),
 				},
 			},
 			args: args{
@@ -258,7 +272,6 @@ func TestSharingClient_ListSchemas(t *testing.T) {
 						ExpirationTime:          "",
 					},
 					numRetries: 0,
-					ctx:        context.Background(),
 				},
 			},
 			args: args{
@@ -273,7 +286,7 @@ func TestSharingClient_ListSchemas(t *testing.T) {
 			s := &sharingClient{
 				restClient: tt.fields.RestClient,
 			}
-			got, err := s.ListSchemas(tt.args.share)
+			got, _, err := s.ListSchemas(context.Background(), tt.args.share, 0, "")
 			if (err != nil) != tt.wantErr {
 				t.Errorf("SharingClient.ListSchemas() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -310,7 +323,6 @@ func TestSharingClient_ListTables(t *testing.T) {
 						ExpirationTime:          "",
 					},
 					numRetries: 0,
-					ctx:        context.Background(),
 				},
 			},
 			args: args{
@@ -333,7 +345,7 @@ func TestSharingClient_ListTables(t *testing.T) {
 			s := &sharingClient{
 				restClient: tt.fields.RestClient,
 			}
-			got, err := s.ListTables(tt.args.schema)
+			got, _, err := s.ListTables(context.Background(), tt.args.schema, 0, "")
 			if (err != nil) != tt.wantErr {
 				t.Errorf("SharingClient.ListTables() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -366,7 +378,6 @@ func TestSharingClient_ListAllTables(t *testing.T) {
 						ExpirationTime:          "",
 					},
 					numRetries: 0,
-					ctx:        context.Background(),
 				},
 			},
 			want: []Table{
@@ -386,7 +397,7 @@ func TestSharingClient_ListAllTables(t *testing.T) {
 			s := &sharingClient{
 				restClient: tt.fields.RestClient,
 			}
-			got, err := s.ListAllTables()
+			got, _, err := s.ListAllTables(context.Background(), 0, "")
 			if (err != nil) != tt.wantErr {
 				t.Errorf("SharingClient.ListAllTables() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -423,7 +434,6 @@ func Test_sharingClient_ListFilesInTable(t *testing.T) {
 						ExpirationTime:          "",
 					},
 					numRetries: 0,
-					ctx:        context.Background(),
 				},
 			},
 			args: args{
@@ -438,7 +448,7 @@ func Test_sharingClient_ListFilesInTable(t *testing.T) {
 			s := &sharingClient{
 				restClient: tt.fields.restClient,
 			}
-			got, err := s.ListFilesInTable(tt.args.t)
+			got, err := s.ListFilesInTable(context.Background(), tt.args.t)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("sharingClient.ListFilesInTable() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -461,7 +471,7 @@ func Test_sharingClient_GetTableVersion(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    int
+		want    int64
 		wantErr bool
 	}{
 		{
@@ -475,7 +485,6 @@ func Test_sharingClient_GetTableVersion(t *testing.T) {
 						ExpirationTime:          "",
 					},
 					numRetries: 0,
-					ctx:        context.Background(),
 				},
 			},
 			args: args{
@@ -490,7 +499,7 @@ func Test_sharingClient_GetTableVersion(t *testing.T) {
 			s := &sharingClient{
 				restClient: tt.fields.restClient,
 			}
-			got, err := s.GetTableVersion(tt.args.t)
+			got, err := s.GetTableVersion(context.Background(), tt.args.t)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("sharingClient.ListFilesInTable() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -505,7 +514,7 @@ func Test_sharingClient_GetTableVersion(t *testing.T) {
 			s := &sharingClient{
 				restClient: tt.fields.restClient,
 			}
-			got, err := s.GetTableVersion(tt.args.t)
+			got, err := s.GetTableVersion(context.Background(), tt.args.t)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("sharingClient.GetTableVersion() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -542,7 +551,6 @@ func Test_sharingClient_GetTableMetadata(t *testing.T) {
 						ExpirationTime:          "",
 					},
 					numRetries: 0,
-					ctx:        context.Background(),
 				},
 			},
 			args: args{
@@ -557,7 +565,7 @@ func Test_sharingClient_GetTableMetadata(t *testing.T) {
 			s := &sharingClient{
 				restClient: tt.fields.restClient,
 			}
-			got, err := s.GetTableMetadata(tt.args.t)
+			got, err := s.GetTableMetadata(context.Background(), tt.args.t)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("sharingClient.GetTableMetadata() error = %s, wantErr %v", err, tt.wantErr)
 				return

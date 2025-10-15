@@ -28,7 +28,6 @@ import (
 
 func TestNewDeltaSharingRestClient(t *testing.T) {
 	type args struct {
-		ctx        context.Context
 		profile    *deltaSharingProfile
 		cacheDir   string
 		numRetries int
@@ -41,7 +40,6 @@ func TestNewDeltaSharingRestClient(t *testing.T) {
 		{
 			name: "test1",
 			args: args{
-				ctx: context.Background(),
 				profile: &deltaSharingProfile{
 					ShareCredentialsVersion: 1,
 					Endpoint:                "https://sharing.delta.io/delta-sharing/",
@@ -60,14 +58,13 @@ func TestNewDeltaSharingRestClient(t *testing.T) {
 				},
 				//				cacheDir:   "",
 				numRetries: 5,
-				ctx:        context.Background(),
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := newDeltaSharingRestClient(tt.args.ctx, tt.args.profile, tt.args.numRetries); !reflect.DeepEqual(got, tt.want) {
+			if got := newDeltaSharingRestClient(tt.args.profile, tt.args.numRetries); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("NewDeltaSharingRestClient() = %v, want %v", got, tt.want)
 			}
 		})
@@ -97,9 +94,9 @@ func TestDeltaSharingRestClient_ReadFileReader(t *testing.T) {
 			d := &deltaSharingRestClient{
 				profile:    tt.fields.Profile,
 				numRetries: tt.fields.NumRetries,
-				ctx:        tt.fields.Ctx,
+				
 			}
-			got, err := d.readFileReader(tt.args.url)
+			got, err := d.readFileReader(context.Background(), tt.args.url)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("DeltaSharingRestClient.ReadFileReader() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -153,13 +150,13 @@ func TestDeltaSharingRestClient_callSharingServer(t *testing.T) {
 			d := &deltaSharingRestClient{
 				profile:    tt.fields.Profile,
 				numRetries: tt.fields.NumRetries,
-				ctx:        tt.fields.Ctx,
+				
 			}
 
 			var shares []share
 			var share protoShare
 
-			got, err := d.callSharingServer(tt.args.request)
+			got, err := d.callSharingServer(context.Background(), tt.args.request)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("DeltaSharingRestClient.callSharingServer() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -223,12 +220,12 @@ func TestDeltaSharingRestClient_callSharingServerWithParameters(t *testing.T) {
 			d := &deltaSharingRestClient{
 				profile:    tt.fields.Profile,
 				numRetries: tt.fields.NumRetries,
-				ctx:        tt.fields.Ctx,
+				
 			}
 			var shares []share
 			var share protoShare
 
-			got, err := d.callSharingServerWithParameters(tt.args.request, tt.args.maxResult, tt.args.pageToken)
+			got, err := d.callSharingServerWithParameters(context.Background(), tt.args.request, tt.args.maxResult, tt.args.pageToken)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("DeltaSharingRestClient.callSharingServerWithParameters() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -278,9 +275,9 @@ func TestDeltaSharingRestClient_getResponseHeader(t *testing.T) {
 			d := &deltaSharingRestClient{
 				profile:    tt.fields.Profile,
 				numRetries: tt.fields.NumRetries,
-				ctx:        tt.fields.Ctx,
+				
 			}
-			got, err := d.getResponseHeader(tt.args.request)
+			got, err := d.getResponseHeader(context.Background(), tt.args.request)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("DeltaSharingRestClient.getResponseHeader() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -335,9 +332,9 @@ func TestDeltaSharingRestClient_ListShares(t *testing.T) {
 			c := deltaSharingRestClient{
 				profile:    tt.fields.Profile,
 				numRetries: tt.fields.NumRetries,
-				ctx:        tt.fields.Ctx,
+				
 			}
-			got, err := c.ListShares(tt.args.maxResult, tt.args.pageToken)
+			got, err := c.ListShares(context.Background(), tt.args.maxResult, tt.args.pageToken)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("DeltaSharingRestClient.ListShares() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -399,9 +396,9 @@ func TestDeltaSharingRestClient_ListSchemas(t *testing.T) {
 			c := deltaSharingRestClient{
 				profile:    tt.fields.Profile,
 				numRetries: tt.fields.NumRetries,
-				ctx:        tt.fields.Ctx,
+				
 			}
-			got, err := c.ListSchemas(tt.args.share, tt.args.maxResult, tt.args.pageToken)
+			got, err := c.ListSchemas(context.Background(), tt.args.share, tt.args.maxResult, tt.args.pageToken)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("DeltaSharingRestClient.ListSchemas() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -468,9 +465,9 @@ func TestDeltaSharingRestClient_ListTables(t *testing.T) {
 			c := deltaSharingRestClient{
 				profile:    tt.fields.Profile,
 				numRetries: tt.fields.NumRetries,
-				ctx:        tt.fields.Ctx,
+				
 			}
-			got, err := c.ListTables(tt.args.schema, tt.args.maxResult, tt.args.pageToken)
+			got, err := c.ListTables(context.Background(), tt.args.schema, tt.args.maxResult, tt.args.pageToken)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("DeltaSharingRestClient.ListTables() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -536,9 +533,9 @@ func TestDeltaSharingRestClient_ListAllTables(t *testing.T) {
 			c := deltaSharingRestClient{
 				profile:    tt.fields.Profile,
 				numRetries: tt.fields.NumRetries,
-				ctx:        tt.fields.Ctx,
+				
 			}
-			got, err := c.ListAllTables(tt.args.share, tt.args.maxResult, tt.args.pageToken)
+			got, err := c.ListAllTables(context.Background(), tt.args.share, tt.args.maxResult, tt.args.pageToken)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("DeltaSharingRestClient.ListAllTables() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -563,7 +560,7 @@ func TestDeltaSharingRestClient_QueryTableVersion(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    int
+		want    int64
 		wantErr bool
 	}{
 		{
@@ -579,9 +576,9 @@ func TestDeltaSharingRestClient_QueryTableVersion(t *testing.T) {
 			c := deltaSharingRestClient{
 				profile:    tt.fields.Profile,
 				numRetries: tt.fields.NumRetries,
-				ctx:        tt.fields.Ctx,
+				
 			}
-			got, err := c.QueryTableVersion(tt.args.table)
+			got, err := c.QueryTableVersion(context.Background(), tt.args.table)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("DeltaSharingRestClient.QueryTableVersion() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -606,7 +603,7 @@ func TestDeltaSharingRestClient_ListFilesInTable(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    float32
+		want    int64
 		wantErr bool
 	}{
 		{
@@ -622,9 +619,9 @@ func TestDeltaSharingRestClient_ListFilesInTable(t *testing.T) {
 			c := &deltaSharingRestClient{
 				profile:    tt.fields.Profile,
 				numRetries: tt.fields.NumRetries,
-				ctx:        tt.fields.Ctx,
+				
 			}
-			got, err := c.ListFilesInTable(tt.args.table)
+			got, err := c.ListFilesInTable(context.Background(), tt.args.table)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("DeltaSharingRestClient.ListFilesInTable() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -661,9 +658,9 @@ func TestDeltaSharingRestClient_postQuery(t *testing.T) {
 			c := &deltaSharingRestClient{
 				profile:    tt.fields.Profile,
 				numRetries: tt.fields.NumRetries,
-				ctx:        tt.fields.Ctx,
+				
 			}
-			got, err := c.postQuery(tt.args.request, tt.args.predicateHints, tt.args.limitHint)
+			got, err := c.postQuery(context.Background(), tt.args.request, tt.args.predicateHints, tt.args.limitHint)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("DeltaSharingRestClient.postQuery() error = %v, wantErr %v", err, tt.wantErr)
 				return

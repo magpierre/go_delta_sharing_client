@@ -49,7 +49,6 @@ func TestFile_GetStats(t *testing.T) {
 						ExpirationTime:          "",
 					},
 					numRetries: 0,
-					ctx:        context.Background(),
 				},
 			},
 			args: args{
@@ -74,7 +73,6 @@ func TestFile_GetStats(t *testing.T) {
 						ExpirationTime:          "",
 					},
 					numRetries: 0,
-					ctx:        context.Background(),
 				},
 			},
 			args: args{
@@ -87,7 +85,7 @@ func TestFile_GetStats(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			d := *tt.fields.restClient
-			F, err := d.ListFilesInTable(tt.args.t)
+			F, err := d.ListFilesInTable(context.Background(), tt.args.t)
 			if (err != nil) == tt.wantErr {
 				return
 			}

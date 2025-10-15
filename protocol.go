@@ -129,9 +129,9 @@ type metadata struct {
 	SchemaString     string            `json:"schemaString"`
 	PartitionColumns []string          `json:"partitionColumns"`
 	Configuration    map[string]string `json:"configuration,omitempty"`
-	Version          int32             `json:"version,omitempty"`
-	Size             int32             `json:"size,omitempty"`
-	NumFiles         int32             `json:"numFiles,omitempty"`
+	Version          int64             `json:"version,omitempty"`
+	Size             int64             `json:"size,omitempty"`
+	NumFiles         int64             `json:"numFiles,omitempty"`
 }
 
 type protoMetadata struct {
@@ -164,11 +164,11 @@ type File struct {
 	Url                 string            `json:"url"`
 	Id                  string            `json:"id"`
 	PartitionValues     map[string]string `json:"partitionValues"`
-	Size                float32           `json:"size"`
+	Size                int64             `json:"size"`
 	Stats               string            `json:"stats,omitempty"`
-	Timestamp           float32           `json:"timestamp,omitempty"`
-	Version             int32             `json:"version,omitempty"`
-	ExpirationTimestamp int32             `json:"expirationTimestamp,omitempty"`
+	Timestamp           int64             `json:"timestamp,omitempty"`
+	Version             int64             `json:"version,omitempty"`
+	ExpirationTimestamp int64             `json:"expirationTimestamp,omitempty"`
 }
 
 type CDFFile struct {
