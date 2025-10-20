@@ -147,6 +147,11 @@ func (M *metadata) GetSparkSchema() (*sparkSchema, error) {
 	return &sparkSchema, nil
 }
 
+type delta_sharing_error struct {
+	ErrorCode    string `json:"error_code"`
+	ErrorMessage string `json:"message"`
+}
+
 /*
 File Object
 */

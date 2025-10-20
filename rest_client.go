@@ -415,9 +415,15 @@ func (c *deltaSharingRestClient) ListFilesInTable(ctx context.Context, table Tab
 	if err != nil {
 		return nil, &DSErr{pkg, fn, "c.postQuery", err.Error()}
 	}
-	if rd == nil || len(*rd) < 3 {
+	if len(*rd) < 3 {
+		var error_msg delta_sharing_error
+		err = json.Unmarshal((*rd)[0], &error_msg)
+		if err == nil && error_msg.ErrorCode != "" {
+			return nil, &DSErr{pkg, fn, "Delta Sharing Error", error_msg.ErrorMessage}
+		}
 		return nil, &DSErr{pkg, fn, "len(*rd)", "Array returned is too short"}
 	}
+
 	var p protocol
 	var m protoMetadata
 	var f protoFile
@@ -548,6 +554,11 @@ func (c *deltaSharingRestClient) ListTableChanges(ctx context.Context, table Tab
 		return nil, &DSErr{pkg, fn, "c.callSharingServer", err.Error()}
 	}
 	if rd == nil || len(*rd) < 3 {
+		var error_msg delta_sharing_error
+		err = json.Unmarshal((*rd)[0], &error_msg)
+		if err == nil && error_msg.ErrorCode != "" {
+			return nil, &DSErr{pkg, fn, "Delta Sharing Error", error_msg.ErrorMessage}
+		}
 		return nil, &DSErr{pkg, fn, "len(*rd)", "Array returned is too short"}
 	}
 	var p protocol
