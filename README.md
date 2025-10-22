@@ -353,4 +353,4 @@ Contributions are welcome! Please ensure:
 
 ## Acknowledgments
 
-This is a community-developed library for the Delta Sharing ecosystem. Special thanks to all contributors and the Delta Lake community.
+This is a community-developed library for the Delta Sharing ecosystem. Special thanks to the Delta Lake community.
