@@ -1,20 +1,16 @@
-/*
-#
-# Copyright (C) 2022 The Delta Lake Project Authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-*/
+// Copyright 2025 Magnus Pierre
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package delta_sharing
 
@@ -94,7 +90,6 @@ func TestDeltaSharingRestClient_ReadFileReader(t *testing.T) {
 			d := &deltaSharingRestClient{
 				profile:    tt.fields.Profile,
 				numRetries: tt.fields.NumRetries,
-				
 			}
 			got, err := d.readFileReader(context.Background(), tt.args.url)
 			if (err != nil) != tt.wantErr {
@@ -150,7 +145,6 @@ func TestDeltaSharingRestClient_callSharingServer(t *testing.T) {
 			d := &deltaSharingRestClient{
 				profile:    tt.fields.Profile,
 				numRetries: tt.fields.NumRetries,
-				
 			}
 
 			var shares []share
@@ -220,7 +214,6 @@ func TestDeltaSharingRestClient_callSharingServerWithParameters(t *testing.T) {
 			d := &deltaSharingRestClient{
 				profile:    tt.fields.Profile,
 				numRetries: tt.fields.NumRetries,
-				
 			}
 			var shares []share
 			var share protoShare
@@ -275,7 +268,6 @@ func TestDeltaSharingRestClient_getResponseHeader(t *testing.T) {
 			d := &deltaSharingRestClient{
 				profile:    tt.fields.Profile,
 				numRetries: tt.fields.NumRetries,
-				
 			}
 			got, err := d.getResponseHeader(context.Background(), tt.args.request)
 			if (err != nil) != tt.wantErr {
@@ -332,7 +324,6 @@ func TestDeltaSharingRestClient_ListShares(t *testing.T) {
 			c := deltaSharingRestClient{
 				profile:    tt.fields.Profile,
 				numRetries: tt.fields.NumRetries,
-				
 			}
 			got, err := c.ListShares(context.Background(), tt.args.maxResult, tt.args.pageToken)
 			if (err != nil) != tt.wantErr {
@@ -396,7 +387,6 @@ func TestDeltaSharingRestClient_ListSchemas(t *testing.T) {
 			c := deltaSharingRestClient{
 				profile:    tt.fields.Profile,
 				numRetries: tt.fields.NumRetries,
-				
 			}
 			got, err := c.ListSchemas(context.Background(), tt.args.share, tt.args.maxResult, tt.args.pageToken)
 			if (err != nil) != tt.wantErr {
@@ -465,7 +455,6 @@ func TestDeltaSharingRestClient_ListTables(t *testing.T) {
 			c := deltaSharingRestClient{
 				profile:    tt.fields.Profile,
 				numRetries: tt.fields.NumRetries,
-				
 			}
 			got, err := c.ListTables(context.Background(), tt.args.schema, tt.args.maxResult, tt.args.pageToken)
 			if (err != nil) != tt.wantErr {
@@ -533,7 +522,6 @@ func TestDeltaSharingRestClient_ListAllTables(t *testing.T) {
 			c := deltaSharingRestClient{
 				profile:    tt.fields.Profile,
 				numRetries: tt.fields.NumRetries,
-				
 			}
 			got, err := c.ListAllTables(context.Background(), tt.args.share, tt.args.maxResult, tt.args.pageToken)
 			if (err != nil) != tt.wantErr {
@@ -576,7 +564,6 @@ func TestDeltaSharingRestClient_QueryTableVersion(t *testing.T) {
 			c := deltaSharingRestClient{
 				profile:    tt.fields.Profile,
 				numRetries: tt.fields.NumRetries,
-				
 			}
 			got, err := c.QueryTableVersion(context.Background(), tt.args.table)
 			if (err != nil) != tt.wantErr {
@@ -619,7 +606,6 @@ func TestDeltaSharingRestClient_ListFilesInTable(t *testing.T) {
 			c := &deltaSharingRestClient{
 				profile:    tt.fields.Profile,
 				numRetries: tt.fields.NumRetries,
-				
 			}
 			got, err := c.ListFilesInTable(context.Background(), tt.args.table)
 			if (err != nil) != tt.wantErr {
@@ -658,7 +644,6 @@ func TestDeltaSharingRestClient_postQuery(t *testing.T) {
 			c := &deltaSharingRestClient{
 				profile:    tt.fields.Profile,
 				numRetries: tt.fields.NumRetries,
-				
 			}
 			got, err := c.postQuery(context.Background(), tt.args.request, tt.args.predicateHints, tt.args.limitHint)
 			if (err != nil) != tt.wantErr {
