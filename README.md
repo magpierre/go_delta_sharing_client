@@ -222,7 +222,7 @@ arrowTable, err := LoadArrowTable(ctx, client, table, "file-id")
 
 **WARNING: These features are EXPERIMENTAL and may change in future versions.**
 
-The library includes an experimental `SharingClientV2` interface that extends the stable `SharingClient` with concurrent operations using goroutines for improved performance. All V2 methods are suffixed with `_V2` and should be used with caution in production environments.
+The library includes an experimental `SharingClientV2` interface that extends the stable `SharingClient` with concurrent operations using goroutines for improved performance. All V2 methods are suffixed with `_V2` and should be used with caution in environments that requires stability.
 
 ### Using the V2 Interface
 
@@ -332,7 +332,6 @@ for id, tbl := range tableMap {
 - You can tolerate API changes
 
 ✅ **Stick with stable API when**:
-- Building production systems
 - Predictability is more important than speed
 - Working with small datasets
 - Resource constraints are tight
