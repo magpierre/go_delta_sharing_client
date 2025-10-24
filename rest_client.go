@@ -50,20 +50,20 @@ type listAllTablesResponse struct {
 }
 type queryTableMetadataReponse struct {
 	Protocol protocol
-	Metadata metadata
+	Metadata Metadata
 }
 type queryTableVersionResponse struct {
 	DeltaTableVersion int64
 }
 type listFilesInTableResponse struct {
 	Protocol protocol
-	Metadata metadata
+	Metadata Metadata
 	AddFiles []File
 }
 
 type listCdfFilesResponse struct {
 	Protocol protocol
-	Metadata metadata
+	Metadata Metadata
 	Action   struct {
 		Add    []File
 		Cdf    []CDFFile

@@ -102,22 +102,22 @@ type format struct {
 /*
 Metadata Object
 */
-type sparkField struct {
+type SparkField struct {
 	Name     string
 	Nullable bool
-	Type     interface{}
-	Metadata interface{}
+	Type     any
+	Metadata any
 }
 
-type sparkSchema struct {
+type SparkSchema struct {
 	Type   string
-	Fields []sparkField
+	Fields []SparkField
 }
 
 type protoFormat struct {
 	Provider string `json:"provider"`
 }
-type metadata struct {
+type Metadata struct {
 	Id               string            `json:"id"`
 	Name             string            `json:"name,omitempty"`
 	Description      string            `json:"description,omitempty"`
@@ -131,11 +131,11 @@ type metadata struct {
 }
 
 type protoMetadata struct {
-	Metadata metadata `json:"metaData"`
+	Metadata Metadata `json:"metaData"`
 }
 
-func (M *metadata) GetSparkSchema() (*sparkSchema, error) {
-	var sparkSchema sparkSchema
+func (M *Metadata) GetSparkSchema() (*SparkSchema, error) {
+	var sparkSchema SparkSchema
 	err := json.Unmarshal([]byte(M.SchemaString), &sparkSchema)
 	if err != nil {
 		return nil, err
@@ -184,8 +184,8 @@ type DataChangeFile struct {
 	File
 }
 
-func (F *File) GetStats() (*stats, error) {
-	var s stats
+func (F *File) GetStats() (*Stats, error) {
+	var s Stats
 	if len(strings.Trim(F.Stats, " ")) == 0 {
 		return nil, errors.New("Stats empty")
 	}
@@ -196,11 +196,11 @@ func (F *File) GetStats() (*stats, error) {
 	return &s, nil
 }
 
-type stats struct {
+type Stats struct {
 	NumRecords int64
-	MinValues  map[string]interface{}
-	MaxValues  map[string]interface{}
-	NullCount  map[string]interface{}
+	MinValues  map[string]any
+	MaxValues  map[string]any
+	NullCount  map[string]any
 }
 
 type protoShare struct {
@@ -240,8 +240,8 @@ type data struct {
 }
 
 type CdfOptions struct {
-	StartingVersion   *int    `json:"starting_version,omitempty"`
-	EndingVersion     *int    `json:"ending_version,omitempty"`
+	StartingVersion   *int64  `json:"starting_version,omitempty"`
+	EndingVersion     *int64  `json:"ending_version,omitempty"`
 	StartingTimestamp *string `json:"starting_timestamp,omitempty"`
 	EndingTimestamp   *string `json:"ending_timestamp,omitempty"`
 }

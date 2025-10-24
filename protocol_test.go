@@ -31,7 +31,7 @@ func TestFile_GetStats(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
-		want    *stats
+		want    *Stats
 		wantErr bool
 	}{
 		{
@@ -50,11 +50,11 @@ func TestFile_GetStats(t *testing.T) {
 			args: args{
 				t: Table{Name: "boston-housing", Share: "delta_sharing", Schema: "default"},
 			},
-			want: &stats{
+			want: &Stats{
 				NumRecords: 506,
-				MinValues:  map[string]interface{}{"tax": float64(187), "rm": float64(3.561), "age": float64(2.9), "crim": float64(0.00632), "zn": float64(0), "nox": float64(0.385), "rad": float64(1), "ptratio": float64(12.6), "black": float64(0.32), "medv": float64(5), "ID": float64(1), "indus": float64(0.46), "lstat": float64(1.73), "chas": float64(0), "dis": float64(1.1296)},
-				MaxValues:  map[string]interface{}{"tax": float64(711), "rm": float64(8.78), "age": float64(100), "crim": float64(88.9762), "zn": float64(100), "nox": float64(0.871), "rad": float64(24), "ptratio": float64(22), "black": float64(396.9), "medv": float64(50), "ID": float64(506), "indus": float64(27.74), "lstat": float64(37.97), "chas": float64(1), "dis": float64(12.1265)},
-				NullCount:  map[string]interface{}{"tax": float64(0), "rm": float64(0), "age": float64(0), "crim": float64(0), "zn": float64(0), "nox": float64(0), "rad": float64(0), "ptratio": float64(0), "black": float64(0), "medv": float64(173), "ID": float64(0), "indus": float64(0), "lstat": float64(0), "chas": float64(0), "dis": float64(0)},
+				MinValues:  map[string]any{"tax": float64(187), "rm": float64(3.561), "age": float64(2.9), "crim": float64(0.00632), "zn": float64(0), "nox": float64(0.385), "rad": float64(1), "ptratio": float64(12.6), "black": float64(0.32), "medv": float64(5), "ID": float64(1), "indus": float64(0.46), "lstat": float64(1.73), "chas": float64(0), "dis": float64(1.1296)},
+				MaxValues:  map[string]any{"tax": float64(711), "rm": float64(8.78), "age": float64(100), "crim": float64(88.9762), "zn": float64(100), "nox": float64(0.871), "rad": float64(24), "ptratio": float64(22), "black": float64(396.9), "medv": float64(50), "ID": float64(506), "indus": float64(27.74), "lstat": float64(37.97), "chas": float64(1), "dis": float64(12.1265)},
+				NullCount:  map[string]any{"tax": float64(0), "rm": float64(0), "age": float64(0), "crim": float64(0), "zn": float64(0), "nox": float64(0), "rad": float64(0), "ptratio": float64(0), "black": float64(0), "medv": float64(173), "ID": float64(0), "indus": float64(0), "lstat": float64(0), "chas": float64(0), "dis": float64(0)},
 			},
 			wantErr: false,
 		},
